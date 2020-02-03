@@ -4,7 +4,6 @@ const MergeRequestLib = require("./mergeRequest");
 const Moment = require("moment-timezone");
 const Env = require("../env");
 const Logger = require("../logger");
-const Gitlab = require("../adapters/gitlab");
 
 // Changelog available format
 exports.CHANGELOG_FORMAT_SLACK = "slack-format";
@@ -21,7 +20,7 @@ const LABEL_CONFIG = [
   { name: "bug", title: "Fixed bugs" }
 ];
 
-exports.generateChangeLogContent = async ({ releaseDate, issues, mergeRequests }, options = {}) => {
+exports.generateChangeLogContent = async ({ releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag }, options = {}) => {
   // Separate by labels
   let changelogBucket = exports._createLabelBucket();
 
@@ -34,11 +33,15 @@ exports.generateChangeLogContent = async ({ releaseDate, issues, mergeRequests }
     { name: "issues", title: "Closed issues", default: true },
     { name: "mergeRequests", title: "Merged merge requests", default: true }
   ];
-  const project = await Gitlab.getRepoByProjectId(Env.GITLAB_PROJECT_ID);
-  const changelogUrl = `${project.web_url}/compare/${options.tags[1].name}...${options.tags[0].name}`;
+
+  let changelogUrl = null;
+  if (secondLatestTag.name != null) {
+    changelogUrl = `${projectWebUrl}/compare/${secondLatestTag.name}...${latestTag.name}`;
+  }
+
   if (options.useSlack) {
     let changelogContent = `*Release note (${Moment.tz(releaseDate, Env.TZ).format("YYYY-MM-DD")})*\n`;
-    if(options.fullChangelogLink) {
+    if(changelogUrl != null && options.fullChangelogLink) {
       changelogContent += `<${changelogUrl}|Full Changelog>\n`;
     }
     for (const labelConfig of labelConfigs) {
@@ -50,7 +53,7 @@ exports.generateChangeLogContent = async ({ releaseDate, issues, mergeRequests }
     return changelogContent;
   } else {
     let changelogContent = `### Release note (${Moment.tz(releaseDate, Env.TZ).format("YYYY-MM-DD")})\n`;
-    if (options.fullChangelogLink) {
+    if (changelogUrl != null && options.fullChangelogLink) {
       changelogContent += `[Full Changelog](${changelogUrl})\n`;
     }
     for (const labelConfig of labelConfigs) {

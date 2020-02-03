@@ -7,6 +7,9 @@ describe("ChangelogLib lib", () => {
     let mergeRequests;
     let issues;
     let changelog;
+    let projectWebUrl;
+    let latestTag;
+    let secondLatestTag;
     const setupCommon = () => {
       MockDate.set(new Date("2019-06-02T06:26:31.000Z"));
       releaseDate = new Date().toISOString();
@@ -167,6 +170,57 @@ describe("ChangelogLib lib", () => {
         },
         "subscribed": false
       }];
+      projectWebUrl = 'http://gitlab.example.com/my-group/my-project';
+      latestTag = {
+        "commit": {
+          "id": "2695effb5807a22ff3d138d593fd856244e155e7",
+          "short_id": "2695effb",
+          "title": "Initial commit",
+          "created_at": "2012-05-27T04:42:42Z",
+          "parent_ids": [
+            "2a4b78934375d7f53875269ffd4f45fd83a84ebe"
+          ],
+          "message": "Initial commit",
+          "author_name": "John Smith",
+          "author_email": "john@example.com",
+          "authored_date": "2012-05-27T04:42:42Z",
+          "committer_name": "Jack Smith",
+          "committer_email": "jack@example.com",
+          "committed_date": "2012-05-27T04:42:42Z"
+        },
+        "release": {
+          "tag_name": "0.1.1",
+          "description": "Amazing release. Wow"
+        },
+        "name": "0.1.1",
+        "target": "2695effb5807a22ff3d138d593fd856244e155e7",
+        "message": null
+      };
+      secondLatestTag = {
+        "commit": {
+          "id": "2695effb5807a22ff3d138d593fd856244e155e7",
+          "short_id": "2695effb",
+          "title": "Initial commit",
+          "created_at": "2012-05-27T04:42:42Z",
+          "parent_ids": [
+            "2a4b78934375d7f53875269ffd4f45fd83a84ebe"
+          ],
+          "message": "Initial commit",
+          "author_name": "John Smith",
+          "author_email": "john@example.com",
+          "authored_date": "2012-05-27T04:42:42Z",
+          "committer_name": "Jack Smith",
+          "committer_email": "jack@example.com",
+          "committed_date": "2012-05-27T04:42:42Z"
+        },
+        "release": {
+          "tag_name": "0.1.0",
+          "description": "Amazing release. Wow"
+        },
+        "name": "0.1.0",
+        "target": "2695effb5807a22ff3d138d593fd856244e155e7",
+        "message": null
+      };
     };
     const cleanUpCommon = () => {
       MockDate.reset();
@@ -176,8 +230,7 @@ describe("ChangelogLib lib", () => {
         setupCommon();
         issues[0].labels = ["breaking change", "enhancement"];
         mergeRequests[0].labels = ["bug", "feature"];
-        tags = ["0.1.1", "0.1.0"];
-        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests}, {tags, fullChangelogLink: true});
+        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag}, {fullChangelogLink: true});
       });
       afterAll(() => {
         cleanUpCommon();
@@ -200,8 +253,7 @@ describe("ChangelogLib lib", () => {
     describe("Without labels", () => {
       beforeAll(async () => {
         setupCommon();
-        tags = ["0.1.1", "0.1.0"];
-        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests}, {tags, fullChangelogLink: true});
+        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag}, {fullChangelogLink: true});
       });
       afterAll(() => {
         cleanUpCommon();
@@ -215,13 +267,29 @@ describe("ChangelogLib lib", () => {
           "- test1 [#1](http://gitlab.example.com/my-group/my-project/merge_requests/1) ([admin](https://gitlab.example.com/admin))\n");
       });
     });
+    describe("First tag", () => {
+      beforeAll(async () => {
+        setupCommon();
+        secondLatestTag = {};
+        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag}, {fullChangelogLink: true});
+      });
+      afterAll(() => {
+        cleanUpCommon();
+      });
+      test("should render changelog in markdown", () => {
+        expect(changelog).toEqual("### Release note (2019-06-02)\n" +
+          "#### Closed issues\n" +
+          "- Consequatur vero maxime deserunt laboriosam est voluptas dolorem. [#6](http://example.com/example/example/issues/6)\n" +
+          "#### Merged merge requests\n" +
+          "- test1 [#1](http://gitlab.example.com/my-group/my-project/merge_requests/1) ([admin](https://gitlab.example.com/admin))\n");
+      });
+    });
     describe("With labels and without full changelog link", () => {
       beforeAll(async () => {
         setupCommon();
         issues[0].labels = ["breaking change", "enhancement"];
         mergeRequests[0].labels = ["bug", "feature"];
-        tags = ["0.1.1", "0.1.0"];
-        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests}, {tags);
+        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag});
       });
       afterAll(() => {
         cleanUpCommon();
@@ -243,8 +311,7 @@ describe("ChangelogLib lib", () => {
     describe("Without labels and without full changelog link", () => {
       beforeAll(async () => {
         setupCommon();
-        tags = ["0.1.1", "0.1.0"];
-        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests}, {tags});
+        changelog = await ChangelogLib.generateChangeLogContent({releaseDate, issues, mergeRequests, projectWebUrl, latestTag, secondLatestTag});
       });
       afterAll(() => {
         cleanUpCommon();

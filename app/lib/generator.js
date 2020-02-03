@@ -6,6 +6,7 @@ const ChangelogLib = require("./changelog");
 const Logger = require("../logger");
 const Moment = require("moment-timezone");
 const Env = require("../env");
+const Gitlab = require("../adapters/gitlab");
 
 exports.generate = async () => {
   const tags = await TagLib.getLatestAndSecondLatestTagByProjectId(Env.GITLAB_PROJECT_ID);
@@ -26,7 +27,8 @@ exports.generate = async () => {
   }
 
   const changeLog = await ChangelogLib.getChangelogByStartAndEndDate(startDate, endDate);
-  const changeLogContent = await ChangelogLib.generateChangeLogContent(changeLog, {tags, fullChangelogLink: true, useSlack: false});
+  const projectWebUrl = await Gitlab.getRepoByProjectId(Env.GITLAB_PROJECT_ID);
+  const changeLogContent = await ChangelogLib.generateChangeLogContent({...changeLog, projectWebUrl, latestTag, secondLatestTag}, {fullChangelogLink: true, useSlack: false});
   Logger.debug(`Changelog: ${changeLogContent}`);
   return await TagLib.upsertTagDescriptionByProjectIdAndTag(Env.GITLAB_PROJECT_ID, latestTag, changeLogContent);
 };

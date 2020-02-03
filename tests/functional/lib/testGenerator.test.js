@@ -150,7 +150,8 @@ describe("Generator lib", () => {
               "members": "http://example.com/api/v4/projects/1/members"
             }
           }
-        );
+        )
+        .persist();
       // Mock MR api
       Nock(Env.GITLAB_API_ENDPOINT)
         .get(`/projects/${Env.GITLAB_PROJECT_ID}/merge_requests`)
